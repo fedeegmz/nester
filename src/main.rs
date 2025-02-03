@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::fs;
 use std::io::{self, BufRead, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 const MODULE_TEMPLATE: &str = "
@@ -13,12 +13,12 @@ fun Application.<!module_name!>Module() {
     configure<!module_name_cap!>Routing()
 }";
 
-const CONTROLLER_TEMPLATE: &str = "
+const SERVICE_TEMPLATE: &str = "
 package <!pkg_name!>.<!module_name!>
 
 import org.koin.core.component.KoinComponent
 
-class <!module_name_cap!>Controller : KoinComponent {}";
+class <!module_name_cap!>Service : KoinComponent {}";
 
 const ROUTING_TEMPLATE: &str = "
 package <!pkg_name!>.<!module_name!>
@@ -41,13 +41,14 @@ struct Project<'a> {
 }
 
 impl<'a> Project<'a> {
-    fn build_path(&self, module: &str) -> String {
-        format!(
-            "{}/{}/{}",
-            self.root.display().to_string(),
-            self.pkg.replace(".", "/"),
-            module,
-        )
+    fn build_path(&self, module: &str) -> PathBuf {
+        let full_path = self.root.join(self.pkg.replace('.', "/"));
+
+        if full_path.is_dir() {
+            full_path.join(module)
+        } else {
+            self.root.join(module)
+        }
     }
 }
 
@@ -59,7 +60,7 @@ pub enum Generate {
 #[derive(clap::Parser)]
 #[command(version)]
 pub struct Args {
-    #[arg(short, long, default_value = env!("PWD"))]
+    #[arg(short, long, default_value_t = std::env::current_dir().unwrap().to_str().unwrap().to_string())]
     pub path: String,
 
     #[arg(short = 'g', long = "gen")]
@@ -90,29 +91,28 @@ fn main() {
 
     match generate {
         Generate::Module => {
-            create_dir(project.build_path(&name));
+            create_dir(&project.build_path(&name));
             create_kotlin_file(&project, &name, "Module", MODULE_TEMPLATE);
-            create_kotlin_file(&project, &name, "Controller", CONTROLLER_TEMPLATE);
+            create_kotlin_file(&project, &name, "Service", SERVICE_TEMPLATE);
             create_kotlin_file(&project, &name, "Routing", ROUTING_TEMPLATE);
         }
     }
 }
 
-fn create_dir(path: String) {
-    let path_obj = Path::new(&path);
-    if !path_obj.exists() {
-        if let Err(e) = fs::create_dir_all(path_obj) {
+fn create_dir(path: &Path) {
+    if !path.exists() {
+        if let Err(e) = fs::create_dir_all(path) {
             eprintln!("Error creating directories: {}", e);
             std::process::exit(1);
         }
     } else {
-        eprintln!("Directory {} already exists", path);
+        eprintln!("Directory {} already exists", path.display().to_string());
         std::process::exit(1);
     }
 }
 
 fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template: &str) {
-    let file_path = project.build_path(&format!("/{}/{}.kt", module, file_name));
+    let file_path = project.build_path(&format!("{}/{}.kt", module, file_name));
     let content = String::from_str(template);
     let mut content = content.unwrap();
     content = content
@@ -125,11 +125,15 @@ fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template
             if let Err(e) = file.write_all(content.as_bytes()) {
                 eprintln!("Error writing to file: {}", e);
             } else {
-                println!("File created: {}", file_path);
+                println!("File created: {}", file_path.display().to_string());
             }
         }
         Err(e) => {
-            eprintln!("Error creating file {}: {}", file_path, e);
+            eprintln!(
+                "Error creating file {}: {}",
+                file_path.display().to_string(),
+                e
+            );
             std::process::exit(1);
         }
     }

@@ -7,6 +7,9 @@ Nester is a command-line interface (CLI) tool written in Rust that facilitates g
 ```bash
 git clone https://github.com/fedeegmz/nester.git
 cd nester
+
+cargo build --release
+sudo mv target/release/nester /usr/local/bin/
 ```
 
 ## Usage
@@ -22,8 +25,8 @@ nester -g module -n users
 - MVC structure generation for Kotlin/Ktor
 - Automatic generation of:
   - Modules
-  - (Coming soon) Controllers
-  - (Coming soon) Services
+  - Services
+  - Routing
   - (Coming soon) Entities
   - (Coming soon) DAOs
 
