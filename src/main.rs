@@ -2,7 +2,6 @@ use clap::Parser;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 const MODULE_TEMPLATE: &str = "
 package <!pkg_name!>.<!module_name!>
@@ -43,7 +42,6 @@ struct Project<'a> {
 impl<'a> Project<'a> {
     fn build_path(&self, module: &str) -> PathBuf {
         let full_path = self.root.join(self.pkg.replace('.', "/"));
-
         if full_path.is_dir() {
             full_path.join(module)
         } else {
@@ -60,10 +58,14 @@ pub enum Generate {
 #[derive(clap::Parser)]
 #[command(version)]
 pub struct Args {
-    #[arg(short, long, default_value_t = std::env::current_dir().unwrap().to_str().unwrap().to_string())]
+    #[arg(short, long, default_value_t = std::env::current_dir()
+        .expect("Failed to get current directory")
+        .to_str()
+        .expect("Invalid UTF-8 in path")
+        .to_string())]
     pub path: String,
 
-    #[arg(short = 'g', long = "gen")]
+    #[arg(short, long)]
     pub generate: Generate,
 
     #[arg(short, long)]
@@ -72,26 +74,26 @@ pub struct Args {
 
 fn main() {
     let args = Args::parse();
-    let path = parse_path(args.path.clone());
-    let root_path = Path::new(&path);
+    let path = parse_path(args.path);
     let generate = args.generate;
     let name = args.name;
 
-    let pkg_name = match find_pkg_name(root_path) {
-        Some(pkg) => pkg,
-        None => {
-            eprintln!("Package name not found");
-            std::process::exit(1);
-        }
-    };
+    let pkg_name = find_pkg_name(&path).unwrap_or_else(|| {
+        eprintln!("Error: Could not determine package name. Make sure `Application.kt` exists.");
+        std::process::exit(1);
+    });
+
     let project = Project {
-        root: root_path,
+        root: &path,
         pkg: pkg_name,
     };
 
     match generate {
         Generate::Module => {
-            create_dir(&project.build_path(&name));
+            if let Err(e) = create_dir(&project.build_path(&name)) {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
             create_kotlin_file(&project, &name, "Module", MODULE_TEMPLATE);
             create_kotlin_file(&project, &name, "Service", SERVICE_TEMPLATE);
             create_kotlin_file(&project, &name, "Routing", ROUTING_TEMPLATE);
@@ -99,23 +101,17 @@ fn main() {
     }
 }
 
-fn create_dir(path: &Path) {
+fn create_dir(path: &Path) -> Result<(), String> {
     if !path.exists() {
-        if let Err(e) = fs::create_dir_all(path) {
-            eprintln!("Error creating directories: {}", e);
-            std::process::exit(1);
-        }
+        fs::create_dir_all(path).map_err(|e| format!("Error creating directories: {}", e))
     } else {
-        eprintln!("Directory {} already exists", path.display().to_string());
-        std::process::exit(1);
+        Err(format!("Directory {} already exists", path.display()))
     }
 }
 
 fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template: &str) {
     let file_path = project.build_path(&format!("{}/{}.kt", module, file_name));
-    let content = String::from_str(template);
-    let mut content = content.unwrap();
-    content = content
+    let content = template
         .replace("<!pkg_name!>", &project.pkg)
         .replace("<!module_name!>", module)
         .replace("<!module_name_cap!>", &capitalize_first_letter(module));
@@ -125,15 +121,11 @@ fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template
             if let Err(e) = file.write_all(content.as_bytes()) {
                 eprintln!("Error writing to file: {}", e);
             } else {
-                println!("File created: {}", file_path.display().to_string());
+                println!("File created: {}", file_path.display());
             }
         }
         Err(e) => {
-            eprintln!(
-                "Error creating file {}: {}",
-                file_path.display().to_string(),
-                e
-            );
+            eprintln!("Error creating file {}: {}", file_path.display(), e);
             std::process::exit(1);
         }
     }
@@ -141,55 +133,36 @@ fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template
 
 fn find_pkg_name(root_path: &Path) -> Option<String> {
     let mut stack = vec![root_path.to_path_buf()];
-
     while let Some(current_path) = stack.pop() {
         if let Ok(entries) = fs::read_dir(&current_path) {
             for entry in entries.flatten() {
                 let path = entry.path();
-
                 if path.is_dir() {
                     stack.push(path);
-                } else if let Some(file_name) = path.file_name() {
-                    if file_name == "Application.kt" {
-                        return extract_package_line(&path);
-                    }
+                } else if path.file_name()? == "Application.kt" {
+                    return extract_package_line(&path);
                 }
             }
-        }
-    }
-    eprintln!("Application.kt file with package line not found.");
-    std::process::exit(1);
-}
-
-fn extract_package_line(file_path: &Path) -> Option<String> {
-    let file = fs::File::open(file_path).ok()?;
-    let reader = io::BufReader::new(file);
-    for line in reader.lines().flatten() {
-        if line.starts_with("package ") {
-            return Some(line.replace("package ", ""));
         }
     }
     None
 }
 
-fn parse_path(path: String) -> String {
-    const KTOR_SRC: &str = "/src/main/kotlin";
-    let path_values = path.split("/");
-    let mut parsed_path = String::new();
-    for part in path_values {
-        if !part.is_empty() {
-            parsed_path.push('/');
-            parsed_path.push_str(part);
-        }
-    }
-    parsed_path += KTOR_SRC;
-    return parsed_path;
+fn extract_package_line(file_path: &Path) -> Option<String> {
+    let file = fs::File::open(file_path).ok()?;
+    let reader = io::BufReader::new(file);
+    reader
+        .lines()
+        .flatten()
+        .find_map(|line| line.strip_prefix("package ").map(|pkg| pkg.to_string()))
+}
+
+fn parse_path(path: String) -> PathBuf {
+    PathBuf::from(path).join("src/main/kotlin")
 }
 
 fn capitalize_first_letter(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-        None => s.to_string(),
-    }
+    s.chars().next().map_or_else(String::new, |first| {
+        format!("{}{}", first.to_uppercase(), &s[1..])
+    })
 }
