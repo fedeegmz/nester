@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
@@ -50,7 +50,7 @@ impl<'a> Project<'a> {
     }
 }
 
-#[derive(Clone, clap::ValueEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug)]
 pub enum Generate {
     Module,
 }
@@ -59,9 +59,9 @@ pub enum Generate {
 #[command(version)]
 pub struct Args {
     #[arg(short, long, default_value_t = std::env::current_dir()
-        .expect("Failed to get current directory")
+        .expect("❌ Failed to get current directory")
         .to_str()
-        .expect("Invalid UTF-8 in path")
+        .expect("❌ Invalid UTF-8 in path")
         .to_string())]
     pub path: String,
 
@@ -79,7 +79,7 @@ fn main() {
     let name = args.name;
 
     let pkg_name = find_pkg_name(&path).unwrap_or_else(|| {
-        eprintln!("Error: Could not determine package name. Make sure `Application.kt` exists.");
+        eprintln!("❌ Error: Could not determine package name. Make sure `Application.kt` exists.");
         std::process::exit(1);
     });
 
@@ -103,9 +103,9 @@ fn main() {
 
 fn create_dir(path: &Path) -> Result<(), String> {
     if !path.exists() {
-        fs::create_dir_all(path).map_err(|e| format!("Error creating directories: {}", e))
+        fs::create_dir_all(path).map_err(|e| format!("❌ Error creating directories: {}", e))
     } else {
-        Err(format!("Directory {} already exists", path.display()))
+        Err(format!("⚠️ Directory {} already exists", path.display()))
     }
 }
 
@@ -119,13 +119,13 @@ fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template
     match fs::File::create(&file_path) {
         Ok(mut file) => {
             if let Err(e) = file.write_all(content.as_bytes()) {
-                eprintln!("Error writing to file: {}", e);
+                eprintln!("⚠️ Error writing to file: {}", e);
             } else {
-                println!("File created: {}", file_path.display());
+                println!("✅ File created: {}", file_path.display());
             }
         }
         Err(e) => {
-            eprintln!("Error creating file {}: {}", file_path.display(), e);
+            eprintln!("❌ Error creating file {}: {}", file_path.display(), e);
             std::process::exit(1);
         }
     }
