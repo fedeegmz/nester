@@ -1,40 +1,61 @@
 # Nester CLI
 
-Nester is a command-line interface (CLI) tool written in Rust that facilitates generating basic structures for Kotlin/Ktor projects following the MVC design pattern (similar to NestJS).
+**Nester** is a command-line interface (CLI) tool written in Rust that helps generate basic structures for **Kotlin/Ktor** projects using **Koin** as a dependency injector.
 
-## Installation
+## 🚀 Installation
 
+### 📦 From Source (Git)
 ```bash
 git clone https://github.com/fedeegmz/nester.git
 cd nester
-
 cargo build --release
 sudo mv target/release/nester /usr/local/bin/
 ```
 
-## Usage
+### 🏹 Arch Linux (AUR)
 
-### Generate a new module
+```bash
+yay -S nester
+```
+
+### 📁 Precompiled Binary
+
+```bash
+wget https://github.com/fedeegmz/nester/releases/download/v0.1.0/nester
+chmod +x nester
+sudo mv nester /usr/local/bin/
+```
+
+## 🛠 Usage
+
+### ✅ Generate a New Module
 
 ```bash
 nester -g module -n users
 ```
 
-## Features
+This command generates a new module named users inside your Kotlin/Ktor project.
 
-- MVC structure generation for Kotlin/Ktor
-- Automatic generation of:
-  - Modules
-  - Services
-  - Routing
-  - (Coming soon) Entities
-  - (Coming soon) DAOs
+```
+Proyecto
+.
+└── root-dir
+    └── src
+        └── main
+            └── kotlin
+                ├── users
+                │   ├── Injection.kt
+                │   ├── Routing.kt
+                │   └── Service.kt
+                └── Application.kt
+```
 
-## Requirements
+## 📋 Requirements
 
-- Rust 1.70 or higher
-- Existing Kotlin/Ktor project
+- **Rust 1.70+**
+- An existing **Kotlin/Ktor** project
 
-## License
+## 📜 License
 
 This project is licensed under the GPL-3.0 License.
+See the full license [here](LICENSE).
