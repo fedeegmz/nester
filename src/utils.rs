@@ -27,9 +27,3 @@ fn extract_line(file_path: &Path, prefix: &str) -> Option<String> {
         .flatten()
         .find_map(|line| line.strip_prefix(prefix).map(|pkg| pkg.to_string()))
 }
-
-pub fn capitalize_first_letter(s: &str) -> String {
-    s.chars().next().map_or_else(String::new, |first| {
-        format!("{}{}", first.to_uppercase(), &s[1..])
-    })
-}

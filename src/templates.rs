@@ -1,39 +1,25 @@
-pub const INJECTION: &str = "
-    package <!pkg_name!>.<!module_name!>
-    
-    import org.koin.core.module.dsl.singleOf
-    import org.koin.dsl.module
+use std::error::Error;
+use tera::{Context, Tera};
 
-    object <!module_name_cap!>Injection {
-        val inject =
-            module {
-                singleOf(::<!module_name_cap!>Service)
-            }
-    }
-";
+use crate::project::Project;
 
-pub const SERVICE: &str = "
-    package <!pkg_name!>.<!module_name!>
+pub fn get_content(
+    project: &Project,
+    template_name: &str,
+    module_name: &String,
+) -> Result<String, Box<dyn Error>> {
+    let home = dirs::home_dir().ok_or("❌ Error: home dir not found")?;
+    let templates_path = home.join(".nester/templates");
+    let tera = Tera::new(&format!("{}*.tera", templates_path.to_str().unwrap()))
+        .expect("❌ Error loading templates");
 
-    import org.koin.core.component.KoinComponent
+    let mut context = Context::new();
+    context.insert("pkg_name", project.package_name.as_ref().unwrap());
+    context.insert("module_name", module_name);
 
-    class <!module_name_cap!>Service : KoinComponent {}
-";
+    let rendered = tera
+        .render(template_name, &context)
+        .expect("❌ Error rendering template");
 
-pub const ROUTING: &str = "
-    package <!pkg_name!>.<!module_name!>
-
-    import io.ktor.server.application.*
-    import io.ktor.server.routing.*
-    import org.koin.ktor.ext.inject
-
-    fun Application.configure<!module_name_cap!>Routing() {
-        val service by inject<<!module_name_cap!>Service>()
-
-        routing {
-            route(\"/<!module_name!>\") {
-
-            }
-        }
-    }
-";
+    Ok(rendered)
+}

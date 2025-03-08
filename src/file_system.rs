@@ -1,5 +1,4 @@
 use crate::project::Project;
-use crate::utils::capitalize_first_letter;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
@@ -12,12 +11,8 @@ pub fn create_dir(path: &Path) -> Result<(), String> {
     }
 }
 
-pub fn create_kotlin_file(project: &Project, module: &str, file_name: &str, template: &str) {
+pub fn create_kotlin_file(project: &Project, module: &str, file_name: &str, content: String) {
     let file_path = project.build_path(&format!("{}/{}.kt", module, file_name));
-    let content = template
-        .replace("<!pkg_name!>", project.package_name.as_ref().unwrap())
-        .replace("<!module_name!>", module)
-        .replace("<!module_name_cap!>", &capitalize_first_letter(module));
 
     match fs::File::create(&file_path) {
         Ok(mut file) => {
