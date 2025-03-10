@@ -4,13 +4,18 @@
 
 ## 🚀 Installation
 
-### 📦 From Source (Git)
+### 🔧 Install Using Script
+
 ```bash
-git clone https://github.com/fedeegmz/nester.git
-cd nester
-cargo build --release
-sudo mv target/release/nester /usr/local/bin/
+chmod +x ./scripts/install.sh
+./scripts/install.sh
 ```
+
+This script:
+1. **Compiles** the project in release mode.
+2. **Checks if a previous version exists** in `/usr/local/bin/`.
+   - If found, it creates a **backup** before replacing it.
+3. **Moves the new binary** to `/usr/local/bin/`.
 
 ### 🏹 Arch Linux (AUR)
 
@@ -37,7 +42,7 @@ nester -g module -n users
 This command generates a new module named users inside your Kotlin/Ktor project.
 
 ```
-Proyecto
+Project
 .
 └── root-dir
     └── src
@@ -49,6 +54,34 @@ Proyecto
                 │   └── Service.kt
                 └── Application.kt
 ```
+
+## ❌ Uninstallation
+
+### 🔥 Remove Nester
+
+To uninstall `nester`, run:
+
+```bash
+chmod +x ./scripts/uninstall.sh
+./scripts/uninstall.sh
+```
+
+This script:
+1. **Checks if `nester` exists** in `/usr/local/bin/`.
+2. **Removes the binary** if found.
+
+### 🧹 Clean Backup Files
+
+If you want to remove all backup files created during installation, run:
+
+```bash
+chmod +x ./scripts/clean_backups.sh
+./scripts/clean_backups.sh
+```
+
+This script:
+1. **Finds all backup files** matching `/usr/local/bin/nester.backup_*`.
+2. **Deletes them permanently**.
 
 ## 📋 Requirements
 

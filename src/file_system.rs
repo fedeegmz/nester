@@ -1,14 +1,18 @@
 use crate::project::Project;
+use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-pub fn create_dir(path: &Path) -> Result<(), String> {
-    if !path.exists() {
-        fs::create_dir_all(path).map_err(|e| format!("❌ Error creating directories: {}", e))
-    } else {
-        Err(format!("⚠️ Directory {} already exists", path.display()))
+pub fn create_dir(path: &Path) -> Result<(), Box<dyn Error>> {
+    if path.exists() {
+        println!("⚠️ Directory {} already exists", path.display());
     }
+    if let Err(e) = fs::create_dir_all(path) {
+        return Err(Box::new(e));
+    }
+
+    Ok(())
 }
 
 pub fn create_kotlin_file(project: &Project, module: &str, file_name: &str, content: String) {

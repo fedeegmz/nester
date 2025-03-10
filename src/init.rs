@@ -1,12 +1,12 @@
-use git2::Repository;
+use crate::config::Config;
+use crate::templates::{clone_templates_repo, fetch_templates_repo};
+use crate::utils::{get_config_path, get_templates_path};
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
 
-pub fn init() -> Result<(), Box<dyn Error>> {
-    let home = dirs::home_dir().ok_or("❌ Error: home dir not found")?;
-    let config_path = home.join(".nester");
-    let templates_path = config_path.join("templates");
+pub fn init(config: &Config) -> Result<(), Box<dyn Error>> {
+    let config_path = get_config_path();
+    let templates_path = get_templates_path();
 
     if !config_path.exists() {
         fs::create_dir_all(&config_path)?;
@@ -15,21 +15,12 @@ pub fn init() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&templates_path)?;
     }
 
-    if let Ok(repo) = Repository::open(&templates_path) {
-        let mut remote = repo.find_remote("origin")?;
-        remote.fetch(&["main"], None, None)?;
-    } else {
-        clone_templates_repo(&templates_path)?;
+    if let Err(_) = fetch_templates_repo(
+        &config.templates.remote.as_str(),
+        &config.templates.branch.as_str(),
+    ) {
+        clone_templates_repo(config.templates.repository.as_str())?;
     }
-
-    Ok(())
-}
-
-pub fn clone_templates_repo(templates_path: &PathBuf) -> Result<(), Box<dyn Error>> {
-    Repository::clone(
-        "https://github.com/fedeegmz/nester-templates.git",
-        &templates_path,
-    )?;
 
     Ok(())
 }
