@@ -1,6 +1,25 @@
 use std::fs;
 use std::io::{self, BufRead};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+fn get_home_dir() -> Option<PathBuf> {
+    dirs::home_dir()
+}
+
+pub fn get_config_path() -> PathBuf {
+    let home = get_home_dir().expect("❌ Failed to get home directory");
+    home.join(".nester")
+}
+
+pub fn get_config_file_path() -> PathBuf {
+    let config_path = get_config_path();
+    config_path.join("config.toml")
+}
+
+pub fn get_templates_path() -> PathBuf {
+    let config_path = get_config_path();
+    config_path.join("templates")
+}
 
 pub fn find_pkg_name(root_path: &Path) -> Option<String> {
     let mut stack = vec![root_path.to_path_buf()];
@@ -26,10 +45,4 @@ fn extract_line(file_path: &Path, prefix: &str) -> Option<String> {
         .lines()
         .flatten()
         .find_map(|line| line.strip_prefix(prefix).map(|pkg| pkg.to_string()))
-}
-
-pub fn capitalize_first_letter(s: &str) -> String {
-    s.chars().next().map_or_else(String::new, |first| {
-        format!("{}{}", first.to_uppercase(), &s[1..])
-    })
 }

@@ -29,14 +29,14 @@ impl<'a> Project<'a> {
         self
     }
 
-    pub fn build_path(&self, module: &str) -> PathBuf {
+    pub fn build_path(&self, path: &str) -> PathBuf {
         let full_path = self
             .src_path
             .join(self.package_name.as_ref().unwrap().replace('.', "/"));
         if full_path.is_dir() {
-            full_path.join(module)
+            full_path.join(path)
         } else {
-            self.src_path.join(module)
+            self.src_path.join(path)
         }
     }
 }

@@ -1,0 +1,78 @@
+name: Deploy CLI
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - master
+
+jobs:
+  create-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update Rust
+        id: update_rustup
+        run: rustup update stable && rustup default stable
+
+      - name: Extract version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version =' Cargo.toml | sed 's/version = "//;s/"//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Extract changelog title
+        id: get_changelog_title
+        run: |
+          if [[ -f CHANGELOG.md ]]; then
+            TITLE=$(grep -m 1 "^## " CHANGELOG.md | sed 's/^## //')
+            if [[ -n "$TITLE" ]]; then
+              echo "CHANGELOG_TITLE=$TITLE" >> $GITHUB_ENV
+            else
+              echo "No changelog title found."
+              exit 1
+            fi
+          else
+            echo "CHANGELOG.md not found."
+            exit 1
+          fi
+        shell: bash
+
+      - name: Build CLI Binary
+        run: |
+          cargo build --release
+          mkdir -p dist
+          cp target/release/nester dist/nester-linux-amd64
+          chmod +x dist/nester-linux-amd64
+
+      - name: Create Git Tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -z "${{ env.VERSION }}" ]; then
+            echo "VERSION is not set"
+            exit 1
+          fi
+          if [ -z "${{ env.CHANGELOG_TITLE }}" ]; then
+            echo "CHANGELOG_TITLE is not set"
+            exit 1
+          fi
+          git tag -a "v${{ env.VERSION }}" -m "${{ env.CHANGELOG_TITLE }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          name: "${{ env.CHANGELOG_TITLE }}"
+          body: "Versión ${{ env.VERSION }} - ${{ env.CHANGELOG_TITLE }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/nester-linux-amd64
