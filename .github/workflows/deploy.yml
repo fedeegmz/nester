@@ -27,23 +27,6 @@ jobs:
           VERSION=$(grep '^version =' Cargo.toml | sed 's/version = "//;s/"//')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Extract changelog title
-        id: get_changelog_title
-        run: |
-          if [[ -f CHANGELOG.md ]]; then
-            TITLE=$(grep -m 1 "^## " CHANGELOG.md | sed 's/^## //')
-            if [[ -n "$TITLE" ]]; then
-              echo "CHANGELOG_TITLE=$TITLE" >> $GITHUB_ENV
-            else
-              echo "No changelog title found."
-              exit 1
-            fi
-          else
-            echo "CHANGELOG.md not found."
-            exit 1
-          fi
-        shell: bash
-
       - name: Build CLI Binary
         run: |
           cargo build --release
@@ -52,6 +35,8 @@ jobs:
           chmod +x dist/nester-linux-amd64
 
       - name: Create Git Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -59,19 +44,14 @@ jobs:
             echo "VERSION is not set"
             exit 1
           fi
-          if [ -z "${{ env.CHANGELOG_TITLE }}" ]; then
-            echo "CHANGELOG_TITLE is not set"
-            exit 1
-          fi
-          git tag -a "v${{ env.VERSION }}" -m "${{ env.CHANGELOG_TITLE }}"
-          git push origin "v${{ env.VERSION }}"
+          git tag "v${{ env.VERSION }}"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git "v${{ env.VERSION }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.VERSION }}"
-          name: "${{ env.CHANGELOG_TITLE }}"
-          body: "Versión ${{ env.VERSION }} - ${{ env.CHANGELOG_TITLE }}"
+          name: "Nester v${{ env.VERSION }}"
           draft: false
           prerelease: false
           files: |
