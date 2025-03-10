@@ -2,7 +2,7 @@ use git2::Repository;
 use std::error::Error;
 use tera::{Context, Tera};
 
-use crate::{project::Project, utils::get_templates_path};
+use crate::{file_system::is_dir_empty, project::Project, utils::get_templates_path};
 
 pub fn get_content(
     project: &Project,
@@ -26,23 +26,26 @@ pub fn get_content(
 }
 
 pub fn clone_templates_repo(repository: &str) -> Result<(), Box<dyn Error>> {
+    println!("Cloning templates repository: {}", &repository);
     let templates_path = get_templates_path();
-    Repository::clone(repository, &templates_path)?;
-
-    Ok(())
-}
-
-pub fn fetch_templates_repo(remote: &str, branch: &str) -> Result<(), Box<dyn Error>> {
-    let templates_path = get_templates_path();
-    if let Ok(repo) = Repository::open(&templates_path) {
-        let mut remote = repo.find_remote(remote)?;
-        remote.fetch(&[branch], None, None)?;
-    } else {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "❌ Failed to open repository",
-        )));
+    if is_dir_empty(&templates_path)? {
+        Repository::clone(repository, &templates_path)?;
     }
 
     Ok(())
 }
+
+// pub fn fetch_templates_repo(remote: &str, branch: &str) -> Result<(), Box<dyn Error>> {
+//     let templates_path = get_templates_path();
+//     if let Ok(repo) = Repository::open(&templates_path) {
+//         let mut remote = repo.find_remote(remote)?;
+//         remote.fetch(&[branch], None, None)?;
+//     } else {
+//         return Err(Box::new(std::io::Error::new(
+//             std::io::ErrorKind::Other,
+//             "❌ Failed to open repository",
+//         )));
+//     }
+
+//     Ok(())
+// }

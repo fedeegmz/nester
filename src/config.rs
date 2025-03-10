@@ -1,3 +1,5 @@
+use crate::file_system::{create_file, read_file};
+use crate::utils::get_config_file_path;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -40,6 +42,11 @@ module_files = [
 "#;
 
 pub fn load_config() -> Config {
-    let config: Config = toml::from_str(DEFAULT_CONFIG).unwrap();
-    config
+    let config_file_path = get_config_file_path();
+    if let Some(content) = read_file(config_file_path.as_path()) {
+        return toml::from_str::<Config>(&content).unwrap();
+    } else {
+        create_file(&config_file_path, DEFAULT_CONFIG.to_string());
+        return toml::from_str::<Config>(DEFAULT_CONFIG).unwrap();
+    }
 }

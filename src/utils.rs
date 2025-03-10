@@ -11,6 +11,11 @@ pub fn get_config_path() -> PathBuf {
     home.join(".nester")
 }
 
+pub fn get_config_file_path() -> PathBuf {
+    let config_path = get_config_path();
+    config_path.join("config.toml")
+}
+
 pub fn get_templates_path() -> PathBuf {
     let config_path = get_config_path();
     config_path.join("templates")
