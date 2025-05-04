@@ -14,24 +14,33 @@ use shared::infrastructure::filesystem::Filesystem;
 use shared::infrastructure::repository::Repository;
 use shared::infrastructure::templates::Templates;
 
-// cargo run -- generate --path Injection.kt  --name example --pkg com.example
 fn main() {
     let cli = parse();
-    let fs: Box<dyn FilesystemPort> = Box::new(Filesystem);
+    let fs: Box<dyn FilesystemPort> = Box::new(Filesystem::new());
     let config_repository = ConfigRepository::new(fs.as_ref());
     let config = config_repository.load();
-    let repository: Box<dyn RepositoryPort> = Box::new(Repository);
+    let repository: Box<dyn RepositoryPort> = Box::new(Repository::new());
     let templates: Box<dyn TemplatesPort> = Box::new(Templates::new(
         config.clone(),
         fs.as_ref(),
         repository.as_ref(),
     ));
 
-    let handler = CommandHandler::new(config.clone(), fs.as_ref(), templates.as_ref());
+    let handler = CommandHandler::new(
+        config.clone(),
+        fs.as_ref(),
+        templates.as_ref(),
+        repository.as_ref(),
+    );
 
     match cli.command {
         Commands::Generate { path, name, pkg } => {
             if let Err(e) = handler.generate(path, name, pkg) {
+                eprintln!("Error: {}", e);
+            }
+        }
+        Commands::Pull => {
+            if let Err(e) = handler.pull_templates() {
                 eprintln!("Error: {}", e);
             }
         }

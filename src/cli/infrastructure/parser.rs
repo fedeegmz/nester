@@ -20,6 +20,7 @@ pub enum Commands {
         #[arg(long)]
         pkg: Option<String>,
     },
+    Pull,
 }
 
 pub fn parse() -> Cli {

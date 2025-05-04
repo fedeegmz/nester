@@ -5,6 +5,12 @@ use std::path::Path;
 #[derive(Clone, Copy)]
 pub struct Filesystem;
 
+impl Filesystem {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
 impl FilesystemPort for Filesystem {
     fn read_file(&self, path: &Path) -> Result<String, String> {
         fs::read_to_string(path).map_err(|e| e.to_string())
