@@ -1,19 +1,27 @@
 use crate::cfg::domain::config::Config;
 use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::repository_port::RepositoryPort;
 use crate::core::port::templates_port::TemplatesPort;
 use crate::shared::utils::cfg_utils::get_templates_path;
-use git2::Repository;
-use std::path::PathBuf;
 use tera::{Context, Tera};
 
 pub struct Templates<'a> {
     config: Config,
     fs: &'a dyn FilesystemPort,
+    repository: &'a dyn RepositoryPort,
 }
 
 impl<'a> Templates<'a> {
-    pub fn new(config: Config, fs: &'a dyn FilesystemPort) -> Self {
-        Self { config, fs }
+    pub fn new(
+        config: Config,
+        fs: &'a dyn FilesystemPort,
+        repository: &'a dyn RepositoryPort,
+    ) -> Self {
+        Self {
+            config,
+            fs,
+            repository,
+        }
     }
 }
 
@@ -25,7 +33,9 @@ impl<'a> TemplatesPort for Templates<'a> {
             self.fs
                 .create_dir_all(&templates_path)
                 .expect("Failed to create templates path");
-            clone_templates_repo(&templates_path, &*self.config.templates.repository);
+            self.repository
+                .clone(&*self.config.templates.repository, &templates_path)
+                .expect("Error cloning repository");
         }
         let template_files = &format!("{}/tera/*.tera", templates_path.to_str().unwrap());
 
@@ -40,12 +50,5 @@ impl<'a> TemplatesPort for Templates<'a> {
             .expect("❌ Error rendering template");
 
         rendered
-    }
-}
-
-fn clone_templates_repo(path: &PathBuf, repository: &str) {
-    println!("Cloning templates repository: {}", &repository);
-    if path.is_dir() && path.exists() {
-        Repository::clone(repository, &path).expect("❌ Error cloning templates repository");
     }
 }
