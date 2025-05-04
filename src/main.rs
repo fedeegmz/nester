@@ -5,7 +5,7 @@ mod core;
 mod shared;
 
 use app::infrastructure::command_handler::CommandHandler;
-use cfg::infrastructure::config_repository_impl::ConfigRepository;
+use cfg::infrastructure::config_repository::ConfigRepository;
 use cli::infrastructure::parser::{parse, Commands};
 use core::port::filesystem_port::FilesystemPort;
 use core::port::templates_port::TemplatesPort;

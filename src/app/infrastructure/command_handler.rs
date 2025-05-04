@@ -29,7 +29,6 @@ impl<'a> CommandHandler<'a> {
         pkg: Option<String>,
     ) -> Result<(), String> {
         let handler = GenerateHandler::new(self.config.clone(), self.fs, self.templates);
-
-        handler.handle(path, name, pkg)
+        handler.handle(path.as_ref(), name, pkg)
     }
 }

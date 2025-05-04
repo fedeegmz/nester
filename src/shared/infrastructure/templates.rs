@@ -22,9 +22,8 @@ impl<'a> TemplatesPort for Templates<'a> {
         // TODO: receive name and pkg in a single struct
         let templates_path = get_templates_path();
         if !templates_path.exists() {
-            let path = templates_path.to_str().unwrap();
             self.fs
-                .create_dir_all(&path)
+                .create_dir_all(&templates_path)
                 .expect("Failed to create templates path");
             clone_templates_repo(&templates_path, &*self.config.templates.repository);
         }
