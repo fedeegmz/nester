@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0] - current
+
+### Added
+
+- Add subcommand `generate`. It receives path arg and template options. For example:
+  ```sh
+  nester generate --path Injection.kt --name user --pkg com.example
+  ```
+
+### Changed
+
+- Refactor code following Hexagonal Architecture.
+- Move `.nester/config.toml` to `.nester/cfg.toml`
+
 ## [0.2.0] - 2025-03-10
 
 ### Added
@@ -25,6 +39,6 @@
 
 - First release of **Nester**.
 - The `nester -g module -n example` command is available for creating a module into Ktor backend project. Including:
-  - **Routing.kt** → basic route handler.
-  - **Service.kt** → service scaffold.
-  - **Module.kt** → init module.
+    - **Routing.kt** → basic route handler.
+    - **Service.kt** → service scaffold.
+    - **Module.kt** → init module.
