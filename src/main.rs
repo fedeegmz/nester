@@ -1,46 +1,27 @@
+mod app;
+mod cfg;
 mod cli;
-mod config;
-mod file_system;
-mod init;
-mod project;
-mod templates;
-mod utils;
+mod shared;
 
-use config::load_config;
-use init::init;
-use project::Project;
-use templates::get_content;
+use crate::app::infrastructure::command_handler::CommandHandler;
+use crate::shared::infrastructure::filesystem::Filesystem;
+use cfg::infrastructure::config_repository_impl::ConfigRepository;
+use clap::Parser;
+use cli::infrastructure::parser::{Cli, Commands};
 
+// cargo run -- generate --path Injection.kt  --name example --pkg com.example
 fn main() {
-    let config = load_config();
+    let cli = Cli::parse();
+    let fs = Filesystem;
+    let config_repository = ConfigRepository::new(fs);
+    let config = config_repository.load();
 
-    if let Err(e) = init(&config) {
-        eprintln!("{}", e);
-        std::process::exit(1);
-    }
+    let handler = CommandHandler::new(config.clone(), fs);
 
-    let args = cli::Args::parse();
-    let generate = args.generate;
-    let name = args.name;
-
-    let project = Project::init(&args.path).set_pkg_name();
-
-    match generate {
-        cli::Generate::Module => {
-            if let Err(e) = file_system::create_dir(&project.build_path(&name)) {
-                eprintln!("{}", e);
-                std::process::exit(1);
-            }
-            for file in &config.ktor.module_files {
-                match get_content(&project, file.template.as_str(), &name) {
-                    Ok(content) => file_system::create_kotlin_file(
-                        &project,
-                        &name,
-                        file.name.as_str(),
-                        content,
-                    ),
-                    Err(e) => eprintln!("{}", e),
-                }
+    match cli.command {
+        Commands::Generate { path, name, pkg } => {
+            if let Err(e) = handler.generate(path, name, pkg) {
+                eprintln!("Error: {}", e);
             }
         }
     }
