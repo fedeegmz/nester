@@ -1,21 +1,24 @@
 use crate::cfg::domain::config::Config;
-use crate::shared::infrastructure::filesystem::Filesystem;
+use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::templates_port::TemplatesPort;
 use crate::shared::utils::cfg_utils::get_templates_path;
 use git2::Repository;
 use std::path::PathBuf;
 use tera::{Context, Tera};
 
-pub struct TemplateRepository {
+pub struct Templates<'a> {
     config: Config,
-    fs: Filesystem,
+    fs: &'a dyn FilesystemPort,
 }
 
-impl TemplateRepository {
-    pub fn new(config: Config, fs: Filesystem) -> Self {
+impl<'a> Templates<'a> {
+    pub fn new(config: Config, fs: &'a dyn FilesystemPort) -> Self {
         Self { config, fs }
     }
+}
 
-    pub fn load(&self, template: &str, name: Option<String>, pkg: Option<String>) -> String {
+impl<'a> TemplatesPort for Templates<'a> {
+    fn load(&self, template: &str, name: Option<String>, pkg: Option<String>) -> String {
         // TODO: receive name and pkg in a single struct
         let templates_path = get_templates_path();
         if !templates_path.exists() {

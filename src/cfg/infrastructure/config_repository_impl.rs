@@ -1,5 +1,5 @@
 use crate::cfg::domain::config::Config;
-use crate::shared::infrastructure::filesystem::Filesystem;
+use crate::core::port::filesystem_port::FilesystemPort;
 use crate::shared::utils::cfg_utils::{get_config_file_path, get_config_path};
 
 const DEFAULT_CONFIG: &str = r#"
@@ -21,12 +21,12 @@ name = "Service.kt"
 template = "service.tera"
 "#;
 
-pub struct ConfigRepository {
-    fs: Filesystem,
+pub struct ConfigRepository<'a> {
+    fs: &'a dyn FilesystemPort,
 }
 
-impl ConfigRepository {
-    pub fn new(fs: Filesystem) -> Self {
+impl<'a> ConfigRepository<'a> {
+    pub fn new(fs: &'a dyn FilesystemPort) -> Self {
         Self { fs }
     }
 

@@ -1,15 +1,19 @@
 use crate::cfg::domain::config::Config;
-use crate::shared::infrastructure::filesystem::Filesystem;
-use crate::shared::infrastructure::template_repository::TemplateRepository;
+use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::templates_port::TemplatesPort;
 
-pub struct GenerateHandler {
+pub struct GenerateHandler<'a> {
     config: Config,
-    fs: Filesystem,
-    templates: TemplateRepository,
+    fs: &'a dyn FilesystemPort,
+    templates: &'a dyn TemplatesPort,
 }
 
-impl GenerateHandler {
-    pub fn new(config: Config, fs: Filesystem, templates: TemplateRepository) -> Self {
+impl<'a> GenerateHandler<'a> {
+    pub fn new(
+        config: Config,
+        fs: &'a dyn FilesystemPort,
+        templates: &'a dyn TemplatesPort,
+    ) -> Self {
         GenerateHandler {
             config,
             fs,

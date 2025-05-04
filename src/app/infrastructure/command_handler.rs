@@ -1,16 +1,25 @@
 use crate::app::application::generate_handler::GenerateHandler;
 use crate::cfg::domain::config::Config;
-use crate::shared::infrastructure::filesystem::Filesystem;
-use crate::shared::infrastructure::template_repository::TemplateRepository;
+use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::templates_port::TemplatesPort;
 
-pub struct CommandHandler {
+pub struct CommandHandler<'a> {
     config: Config,
-    fs: Filesystem,
+    fs: &'a dyn FilesystemPort,
+    templates: &'a dyn TemplatesPort,
 }
 
-impl CommandHandler {
-    pub fn new(config: Config, fs: Filesystem) -> Self {
-        Self { config, fs }
+impl<'a> CommandHandler<'a> {
+    pub fn new(
+        config: Config,
+        fs: &'a dyn FilesystemPort,
+        templates: &'a dyn TemplatesPort,
+    ) -> Self {
+        Self {
+            config,
+            fs,
+            templates,
+        }
     }
 
     pub fn generate(
@@ -19,8 +28,7 @@ impl CommandHandler {
         name: Option<String>,
         pkg: Option<String>,
     ) -> Result<(), String> {
-        let templates = TemplateRepository::new(self.config.clone(), self.fs);
-        let handler = GenerateHandler::new(self.config.clone(), self.fs, templates);
+        let handler = GenerateHandler::new(self.config.clone(), self.fs, self.templates);
 
         handler.handle(path, name, pkg)
     }

@@ -21,3 +21,7 @@ pub enum Commands {
         pkg: Option<String>,
     },
 }
+
+pub fn parse() -> Cli {
+    Cli::parse()
+}
