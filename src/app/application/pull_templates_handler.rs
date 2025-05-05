@@ -12,13 +12,11 @@ impl<'a> PullTemplatesHandler<'a> {
         Self { config, repository }
     }
 
-    pub fn handle(&self) -> Result<(), String> {
+    pub fn handle(&self) {
         let templates_path = get_templates_path();
         let remote = self.config.templates.remote.clone();
         let branch = self.config.templates.branch.clone();
         self.repository
-            .pull(templates_path.as_path(), &*remote, branch)?;
-
-        Ok(())
+            .pull(templates_path.as_path(), &*remote, branch);
     }
 }

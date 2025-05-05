@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "nester-cli")]
+#[command(name = "nester")]
 #[command(about = "CLI tool to generate project templates", long_about = None)]
+#[command(version = "1.0.0")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

@@ -1,5 +1,6 @@
 use crate::cfg::domain::config::Config;
 use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::logger_port::LoggerPort;
 use crate::shared::utils::cfg_utils::{get_config_file_path, get_config_path};
 use std::path::Path;
 
@@ -24,11 +25,12 @@ template = "service.tera"
 
 pub struct ConfigRepository<'a> {
     fs: &'a dyn FilesystemPort,
+    logger: &'a dyn LoggerPort,
 }
 
 impl<'a> ConfigRepository<'a> {
-    pub fn new(fs: &'a dyn FilesystemPort) -> Self {
-        Self { fs }
+    pub fn new(fs: &'a dyn FilesystemPort, logger: &'a dyn LoggerPort) -> Self {
+        Self { fs, logger }
     }
 
     pub fn load(&self) -> Config {
@@ -42,7 +44,8 @@ impl<'a> ConfigRepository<'a> {
                     match toml::from_str::<Config>(&content) {
                         Ok(config) => config,
                         Err(_) => {
-                            println!("Error parsing config file, using default config");
+                            self.logger
+                                .warn("Error parsing config file, using default config");
                             self.save_default_config(&config_file_path)
                         }
                     }
@@ -55,13 +58,13 @@ impl<'a> ConfigRepository<'a> {
     fn save_default_config(&self, config_file_path: &Path) -> Config {
         let config_path = get_config_path();
         if !config_path.exists() {
-            self.fs
-                .create_dir_all(&config_path)
-                .expect("Error creating config directory");
+            if let Err(_) = self.fs.create_dir_all(&config_path) {
+                self.logger.warn("Error creating config directory");
+            }
         }
-        self.fs
-            .write_file(config_file_path, DEFAULT_CONFIG)
-            .expect("Error writing default config file");
+        if let Err(_) = self.fs.write_file(config_file_path, DEFAULT_CONFIG) {
+            self.logger.warn("Error writing default config file");
+        }
         toml::from_str::<Config>(DEFAULT_CONFIG).unwrap()
     }
 }

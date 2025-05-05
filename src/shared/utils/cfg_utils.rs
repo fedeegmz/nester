@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-fn get_home_dir() -> Option<PathBuf> {
-    dirs::home_dir()
+fn get_home_dir() -> PathBuf {
+    dirs::home_dir().expect("❌ Failed to get home directory")
 }
 
 pub fn get_config_path() -> PathBuf {
-    let home = get_home_dir().expect("❌ Failed to get home directory");
+    let home = get_home_dir();
     home.join(".nester")
 }
 

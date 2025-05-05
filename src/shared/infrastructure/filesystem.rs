@@ -1,17 +1,20 @@
 use crate::core::port::filesystem_port::FilesystemPort;
+use crate::core::port::logger_port::LoggerPort;
 use std::fs;
 use std::path::Path;
 
 #[derive(Clone, Copy)]
-pub struct Filesystem;
+pub struct Filesystem<'a> {
+    logger: &'a dyn LoggerPort,
+}
 
-impl Filesystem {
-    pub fn new() -> Self {
-        Self
+impl<'a> Filesystem<'a> {
+    pub fn new(logger: &'a dyn LoggerPort) -> Self {
+        Self { logger }
     }
 }
 
-impl FilesystemPort for Filesystem {
+impl<'a> FilesystemPort for Filesystem<'a> {
     fn read_file(&self, path: &Path) -> Result<String, String> {
         fs::read_to_string(path).map_err(|e| e.to_string())
     }
@@ -22,7 +25,10 @@ impl FilesystemPort for Filesystem {
                 self.create_dir_all(parent_path)?;
             }
         }
-
+        if path.is_file() {
+            self.logger.warn("File already exists. Overwriting it.");
+            // TODO: Implement a confirmation prompt asking the user if they wish to continue.
+        }
         fs::write(path, content).map_err(|e| e.to_string())
     }
 

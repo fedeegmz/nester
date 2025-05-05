@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.0] - current
+## [1.0.0] - 2025-05-04
 
 ### Added
 
@@ -8,6 +8,8 @@
   ```sh
   nester generate --path Injection.kt --name user --pkg com.example
   ```
+- Add subcommand `pull`: fetches changes from and integrates them into the local template repository using `git pull`.
+- Add logger.
 
 ### Changed
 

@@ -4,6 +4,8 @@ mod cli;
 mod core;
 mod shared;
 
+use crate::core::port::logger_port::LoggerPort;
+use crate::shared::infrastructure::logger::Logger;
 use app::infrastructure::command_handler::CommandHandler;
 use cfg::infrastructure::config_repository::ConfigRepository;
 use cli::infrastructure::parser::{parse, Commands};
@@ -15,15 +17,17 @@ use shared::infrastructure::repository::Repository;
 use shared::infrastructure::templates::Templates;
 
 fn main() {
+    let logger: Box<dyn LoggerPort> = Box::new(Logger::new());
     let cli = parse();
-    let fs: Box<dyn FilesystemPort> = Box::new(Filesystem::new());
-    let config_repository = ConfigRepository::new(fs.as_ref());
+    let fs: Box<dyn FilesystemPort> = Box::new(Filesystem::new(logger.as_ref()));
+    let config_repository = ConfigRepository::new(fs.as_ref(), logger.as_ref());
     let config = config_repository.load();
-    let repository: Box<dyn RepositoryPort> = Box::new(Repository::new());
+    let repository: Box<dyn RepositoryPort> = Box::new(Repository::new(logger.as_ref()));
     let templates: Box<dyn TemplatesPort> = Box::new(Templates::new(
         config.clone(),
         fs.as_ref(),
         repository.as_ref(),
+        logger.as_ref(),
     ));
 
     let handler = CommandHandler::new(
@@ -31,18 +35,12 @@ fn main() {
         fs.as_ref(),
         templates.as_ref(),
         repository.as_ref(),
+        logger.as_ref(),
     );
 
     match cli.command {
-        Commands::Generate { path, name, pkg } => {
-            if let Err(e) = handler.generate(path, name, pkg) {
-                eprintln!("Error: {}", e);
-            }
-        }
-        Commands::Pull => {
-            if let Err(e) = handler.pull_templates() {
-                eprintln!("Error: {}", e);
-            }
-        }
+        Commands::Generate { path, name, pkg } => handler.generate(path, name, pkg),
+
+        Commands::Pull => handler.pull_templates(),
     }
 }
