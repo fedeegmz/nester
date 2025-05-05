@@ -1,47 +1,46 @@
+mod app;
+mod cfg;
 mod cli;
-mod config;
-mod file_system;
-mod init;
-mod project;
-mod templates;
-mod utils;
+mod core;
+mod shared;
 
-use config::load_config;
-use init::init;
-use project::Project;
-use templates::get_content;
+use crate::core::port::logger_port::LoggerPort;
+use crate::shared::infrastructure::logger::Logger;
+use app::infrastructure::command_handler::CommandHandler;
+use cfg::infrastructure::config_repository::ConfigRepository;
+use cli::infrastructure::parser::{parse, Commands};
+use core::port::filesystem_port::FilesystemPort;
+use core::port::repository_port::RepositoryPort;
+use core::port::templates_port::TemplatesPort;
+use shared::infrastructure::filesystem::Filesystem;
+use shared::infrastructure::repository::Repository;
+use shared::infrastructure::templates::Templates;
 
 fn main() {
-    let config = load_config();
+    let logger: Box<dyn LoggerPort> = Box::new(Logger::new());
+    let cli = parse();
+    let fs: Box<dyn FilesystemPort> = Box::new(Filesystem::new(logger.as_ref()));
+    let config_repository = ConfigRepository::new(fs.as_ref(), logger.as_ref());
+    let config = config_repository.load();
+    let repository: Box<dyn RepositoryPort> = Box::new(Repository::new(logger.as_ref()));
+    let templates: Box<dyn TemplatesPort> = Box::new(Templates::new(
+        config.clone(),
+        fs.as_ref(),
+        repository.as_ref(),
+        logger.as_ref(),
+    ));
 
-    if let Err(e) = init(&config) {
-        eprintln!("{}", e);
-        std::process::exit(1);
-    }
+    let handler = CommandHandler::new(
+        config.clone(),
+        fs.as_ref(),
+        templates.as_ref(),
+        repository.as_ref(),
+        logger.as_ref(),
+    );
 
-    let args = cli::Args::parse();
-    let generate = args.generate;
-    let name = args.name;
+    match cli.command {
+        Commands::Generate { path, name, pkg } => handler.generate(path, name, pkg),
 
-    let project = Project::init(&args.path).set_pkg_name();
-
-    match generate {
-        cli::Generate::Module => {
-            if let Err(e) = file_system::create_dir(&project.build_path(&name)) {
-                eprintln!("{}", e);
-                std::process::exit(1);
-            }
-            for file in &config.ktor.module_files {
-                match get_content(&project, file.template.as_str(), &name) {
-                    Ok(content) => file_system::create_kotlin_file(
-                        &project,
-                        &name,
-                        file.name.as_str(),
-                        content,
-                    ),
-                    Err(e) => eprintln!("{}", e),
-                }
-            }
-        }
+        Commands::Pull => handler.pull_templates(),
     }
 }

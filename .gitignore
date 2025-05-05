@@ -1,4 +1,5 @@
 /target
 
-### VS Code ###
+### IDE ###
+.idea/
 .vscode/
