@@ -1,10 +1,12 @@
 use crate::app::application::generate_handler::GenerateHandler;
 use crate::app::application::pull_templates_handler::PullTemplatesHandler;
+use crate::app::domain::available_values::AvailableValues;
 use crate::cfg::domain::config::Config;
 use crate::core::port::filesystem_port::FilesystemPort;
 use crate::core::port::logger_port::LoggerPort;
 use crate::core::port::repository_port::RepositoryPort;
 use crate::core::port::templates_port::TemplatesPort;
+use std::path::Path;
 
 pub struct CommandHandler<'a> {
     config: Config,
@@ -32,9 +34,14 @@ impl<'a> CommandHandler<'a> {
     }
 
     pub fn generate(&self, path: String, name: Option<String>, pkg: Option<String>) {
+        let args = AvailableValues {
+            path: Path::new(&path),
+            name,
+            pkg,
+        };
         let handler =
             GenerateHandler::new(self.config.clone(), self.fs, self.templates, self.logger);
-        handler.handle(path.as_ref(), name, pkg);
+        handler.handle(args);
     }
 
     pub fn pull_templates(&self) {

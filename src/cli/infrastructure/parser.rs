@@ -18,7 +18,10 @@ pub enum Commands {
         #[arg(long)]
         name: Option<String>,
 
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "Package name for Kotlin projects. Example: com.example.project"
+        )]
         pkg: Option<String>,
     },
     Pull,

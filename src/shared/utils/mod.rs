@@ -1,2 +1,2 @@
-mod app_utils;
+pub mod app_utils;
 pub mod cfg_utils;
